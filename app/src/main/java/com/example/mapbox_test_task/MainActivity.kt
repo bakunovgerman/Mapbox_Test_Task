@@ -21,6 +21,11 @@ import com.mapbox.mapboxsdk.maps.MapboxMap
 import com.mapbox.mapboxsdk.maps.OnMapReadyCallback
 import com.mapbox.mapboxsdk.maps.Style
 import android.location.LocationManager
+import com.example.mapbox_test_task.model.MarkersMap
+import com.example.mapbox_test_task.retrofit.Common
+import retrofit2.Call
+import retrofit2.Response
+import javax.security.auth.callback.Callback
 
 class MainActivity : AppCompatActivity(), PermissionsListener, OnMapReadyCallback, LocationListener {
 
@@ -42,6 +47,8 @@ class MainActivity : AppCompatActivity(), PermissionsListener, OnMapReadyCallbac
         getLocationDevice()
     }
 
+
+
     @SuppressLint("MissingPermission")
     private fun getLocationDevice() {
         if (PermissionsManager.areLocationPermissionsGranted(this)) {
@@ -50,9 +57,30 @@ class MainActivity : AppCompatActivity(), PermissionsListener, OnMapReadyCallbac
             longitude = location?.longitude?.toFloat()
             latitude = location?.latitude?.toFloat()
             Log.d("location", "location: $longitude; $latitude")
+            if (longitude != null && latitude != null)
+                getMarkersMapAPI(longitude!!, latitude!!)
+            else
+                Toast.makeText(this, "Данные геопозиции не получены!", Toast.LENGTH_LONG).show()
         }
     }
 
+    private fun getMarkersMapAPI(lon: Float, lat: Float){
+        val mService = Common.retrofitService
+        //Log.d("markersMap", mService.getMarkersMap(lon, lat, 1000, 50, getString(R.string.mapbox_access_token)).request().toString())
+        mService.getMarkersMap(lon, lat, 1000, 50, getString(R.string.mapbox_access_token))
+            .enqueue(object : retrofit2.Callback<MarkersMap> {
+                override fun onResponse(call: Call<MarkersMap>, response: Response<MarkersMap>) {
+                    if (response.isSuccessful){
+                        val markersMap: MarkersMap? = response.body()
+                        Log.d("markersMap", markersMap?.features?.size.toString())
+                    }
+                }
+
+                override fun onFailure(call: Call<MarkersMap>, t: Throwable) {
+                    Log.d("markersMap-Throwable", t.toString())
+                }
+            })
+    }
 
     override fun onLocationChanged(location: Location) {
         Log.d("location", location.latitude.toString())
@@ -166,7 +194,5 @@ class MainActivity : AppCompatActivity(), PermissionsListener, OnMapReadyCallbac
         super.onDestroy()
         mapView.onDestroy()
     }
-
-
 
 }
