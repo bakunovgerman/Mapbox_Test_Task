@@ -23,6 +23,8 @@ import com.mapbox.mapboxsdk.maps.Style
 import android.location.LocationManager
 import com.example.mapbox_test_task.model.MarkersMap
 import com.example.mapbox_test_task.retrofit.Common
+import com.mapbox.mapboxsdk.annotations.MarkerOptions
+import com.mapbox.mapboxsdk.geometry.LatLng
 import retrofit2.Call
 import retrofit2.Response
 import javax.security.auth.callback.Callback
@@ -47,8 +49,6 @@ class MainActivity : AppCompatActivity(), PermissionsListener, OnMapReadyCallbac
         getLocationDevice()
     }
 
-
-
     @SuppressLint("MissingPermission")
     private fun getLocationDevice() {
         if (PermissionsManager.areLocationPermissionsGranted(this)) {
@@ -72,6 +72,9 @@ class MainActivity : AppCompatActivity(), PermissionsListener, OnMapReadyCallbac
                 override fun onResponse(call: Call<MarkersMap>, response: Response<MarkersMap>) {
                     if (response.isSuccessful){
                         val markersMap: MarkersMap? = response.body()
+                        markersMap?.features?.forEach {
+                            mapboxMap.addMarker(MarkerOptions().position(LatLng(it.geometry.coordinates[1], it.geometry.coordinates[0])))
+                        }
                         Log.d("markersMap", markersMap?.features?.size.toString())
                     }
                 }
@@ -119,6 +122,10 @@ class MainActivity : AppCompatActivity(), PermissionsListener, OnMapReadyCallbac
         ) {
             // Map is set up and the style has loaded. Now you can add data or make other map adjustments
             enableLocationComponent(it)
+        }
+        mapboxMap.addOnMapClickListener {
+            mapboxMap.addMarker(MarkerOptions().position(it))
+            true
         }
     }
 
