@@ -1,4 +1,4 @@
-package com.example.mapbox_test_task
+package com.example.mapbox_test_task.activity
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -21,16 +21,17 @@ import com.mapbox.mapboxsdk.maps.MapboxMap
 import com.mapbox.mapboxsdk.maps.OnMapReadyCallback
 import com.mapbox.mapboxsdk.maps.Style
 import android.location.LocationManager
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProvider
+import com.example.mapbox_test_task.R
 import com.example.mapbox_test_task.gps.GPSTracker
 import com.example.mapbox_test_task.model.MarkersMap
 import com.example.mapbox_test_task.retrofit.Common
-import com.mapbox.android.core.location.LocationEngine
-import com.mapbox.android.core.location.LocationEngineProvider
+import com.example.mapbox_test_task.viewModel.MainActivityViewModel
 import com.mapbox.mapboxsdk.annotations.MarkerOptions
 import com.mapbox.mapboxsdk.geometry.LatLng
 import retrofit2.Call
 import retrofit2.Response
-import javax.security.auth.callback.Callback
 
 class MainActivity : AppCompatActivity(), PermissionsListener, OnMapReadyCallback,
     LocationListener {
@@ -41,6 +42,7 @@ class MainActivity : AppCompatActivity(), PermissionsListener, OnMapReadyCallbac
     private lateinit var locationManager: LocationManager
     private var longitude: Float? = null
     private var latitude: Float? = null
+    private lateinit var mainActivityViewModel: MainActivityViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -50,71 +52,49 @@ class MainActivity : AppCompatActivity(), PermissionsListener, OnMapReadyCallbac
         mapView = findViewById(R.id.mapView)
         mapView.onCreate(savedInstanceState)
         mapView.getMapAsync(this)
-        //getLocationDevice()
+
+        mainActivityViewModel = ViewModelProvider(this).get(MainActivityViewModel::class.java)
+        mainActivityViewModel.markersMap.observe(this, Observer(::addMarkers))
+    }
+
+    private fun addMarkers(markersMap: MarkersMap) {
+        Toast.makeText(this, "addMarkers", Toast.LENGTH_LONG).show()
+//        if (markersMap != null){
+//            markersMap.features.forEach {
+//                mapboxMap.addMarker(
+//                    MarkerOptions().position(
+//                        LatLng(
+//                            it.geometry.coordinates[1],
+//                            it.geometry.coordinates[0]
+//                        )
+//                    )
+//                )
+//            }
+//        } else{
+//            Toast.makeText(this, "Маркеры не получены!", Toast.LENGTH_LONG).show()
+//        }
 
     }
 
-    private fun getLocationGPSTracker() {
-        if (PermissionsManager.areLocationPermissionsGranted(this)) {
-            val gpsTracker = GPSTracker(this)
-            val location = gpsTracker.getLocation()
-            if (location != null) {
-                getMarkersMapAPI(location.longitude.toFloat(), location.latitude.toFloat())
-            } else {
-                Toast.makeText(this, "location is null", Toast.LENGTH_LONG).show()
-            }
-        }
-
-    }
-
-    @SuppressLint("MissingPermission")
-    private fun getLocationDevice() {
-        if (PermissionsManager.areLocationPermissionsGranted(this)) {
-            //locationManager.requestLocationUpdates(, 5000, 5f, this);
-            val location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
-            if (location != null) {
-                longitude = location.longitude.toFloat()
-                latitude = location.latitude.toFloat()
-                //Log.d("location", "location: $longitude; $latitude")
-                getMarkersMapAPI(longitude!!, latitude!!)
-            } else {
-                Toast.makeText(this, "Данные геопозиции не получены!", Toast.LENGTH_LONG).show()
-            }
-
-        } else {
-            permissionsManager = PermissionsManager(this)
-            permissionsManager.requestLocationPermissions(this)
-        }
-    }
-
-    private fun getMarkersMapAPI(lon: Float, lat: Float) {
-        val mService = Common.retrofitService
-        //Log.d("markersMap", mService.getMarkersMap(lon, lat, 1000, 50, getString(R.string.mapbox_access_token)).request().toString())
-        mService.getMarkersMap(lon, lat, 1000, 50, getString(R.string.mapbox_access_token))
-            .enqueue(object : retrofit2.Callback<MarkersMap> {
-                override fun onResponse(call: Call<MarkersMap>, response: Response<MarkersMap>) {
-                    if (response.isSuccessful) {
-                        val markersMap: MarkersMap? = response.body()
-                        markersMap?.features?.forEach {
-                            mapboxMap.addMarker(
-                                MarkerOptions().position(
-                                    LatLng(
-                                        it.geometry.coordinates[1],
-                                        it.geometry.coordinates[0]
-                                    )
-                                )
-                            )
-                        }
-                        Log.d("markersMap", markersMap?.features?.size.toString())
-                    }
-                }
-
-                override fun onFailure(call: Call<MarkersMap>, t: Throwable) {
-                    Log.d("markersMap-Throwable", t.toString())
-                    Toast.makeText(this@MainActivity, "Retrofit onFailure", Toast.LENGTH_LONG).show()
-                }
-            })
-    }
+//    @SuppressLint("MissingPermission")
+//    private fun getLocationDevice() {
+//        if (PermissionsManager.areLocationPermissionsGranted(this)) {
+//            //locationManager.requestLocationUpdates(, 5000, 5f, this);
+//            val location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+//            if (location != null) {
+//                longitude = location.longitude.toFloat()
+//                latitude = location.latitude.toFloat()
+//                //Log.d("location", "location: $longitude; $latitude")
+//                getMarkersMapAPI(longitude!!, latitude!!)
+//            } else {
+//                Toast.makeText(this, "Данные геопозиции не получены!", Toast.LENGTH_LONG).show()
+//            }
+//
+//        } else {
+//            permissionsManager = PermissionsManager(this)
+//            permissionsManager.requestLocationPermissions(this)
+//        }
+//    }
 
     override fun onLocationChanged(location: Location) {
         Log.d("location", location.latitude.toString())
@@ -191,7 +171,7 @@ class MainActivity : AppCompatActivity(), PermissionsListener, OnMapReadyCallbac
                 // Set the LocationComponent's render mode
                 renderMode = RenderMode.COMPASS
             }
-            getLocationGPSTracker()
+            mainActivityViewModel.loadMarkersMap()
         } else {
             permissionsManager = PermissionsManager(this)
             permissionsManager.requestLocationPermissions(this)
