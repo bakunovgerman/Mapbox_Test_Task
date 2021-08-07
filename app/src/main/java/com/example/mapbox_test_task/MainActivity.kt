@@ -23,18 +23,21 @@ import com.mapbox.mapboxsdk.maps.Style
 import android.location.LocationManager
 import com.example.mapbox_test_task.model.MarkersMap
 import com.example.mapbox_test_task.retrofit.Common
+import com.mapbox.android.core.location.LocationEngine
+import com.mapbox.android.core.location.LocationEngineProvider
 import com.mapbox.mapboxsdk.annotations.MarkerOptions
 import com.mapbox.mapboxsdk.geometry.LatLng
 import retrofit2.Call
 import retrofit2.Response
 import javax.security.auth.callback.Callback
 
-class MainActivity : AppCompatActivity(), PermissionsListener, OnMapReadyCallback, LocationListener {
+class MainActivity : AppCompatActivity(), PermissionsListener, OnMapReadyCallback,
+    LocationListener {
 
     private lateinit var mapView: MapView
     private lateinit var mapboxMap: MapboxMap
     private var permissionsManager: PermissionsManager = PermissionsManager(this)
-    private lateinit var locationManager : LocationManager
+    private lateinit var locationManager: LocationManager
     private var longitude: Float? = null
     private var latitude: Float? = null
 
@@ -54,26 +57,35 @@ class MainActivity : AppCompatActivity(), PermissionsListener, OnMapReadyCallbac
         if (PermissionsManager.areLocationPermissionsGranted(this)) {
             //locationManager.requestLocationUpdates(, 5000, 5f, this);
             val location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
-            longitude = location?.longitude?.toFloat()
-            latitude = location?.latitude?.toFloat()
-            Log.d("location", "location: $longitude; $latitude")
-            if (longitude != null && latitude != null)
+            if (location != null) {
+                longitude = location.longitude.toFloat()
+                latitude = location.latitude.toFloat()
+                //Log.d("location", "location: $longitude; $latitude")
                 getMarkersMapAPI(longitude!!, latitude!!)
-            else
+            } else {
                 Toast.makeText(this, "Данные геопозиции не получены!", Toast.LENGTH_LONG).show()
+            }
+
         }
     }
 
-    private fun getMarkersMapAPI(lon: Float, lat: Float){
+    private fun getMarkersMapAPI(lon: Float, lat: Float) {
         val mService = Common.retrofitService
         //Log.d("markersMap", mService.getMarkersMap(lon, lat, 1000, 50, getString(R.string.mapbox_access_token)).request().toString())
         mService.getMarkersMap(lon, lat, 1000, 50, getString(R.string.mapbox_access_token))
             .enqueue(object : retrofit2.Callback<MarkersMap> {
                 override fun onResponse(call: Call<MarkersMap>, response: Response<MarkersMap>) {
-                    if (response.isSuccessful){
+                    if (response.isSuccessful) {
                         val markersMap: MarkersMap? = response.body()
                         markersMap?.features?.forEach {
-                            mapboxMap.addMarker(MarkerOptions().position(LatLng(it.geometry.coordinates[1], it.geometry.coordinates[0])))
+                            mapboxMap.addMarker(
+                                MarkerOptions().position(
+                                    LatLng(
+                                        it.geometry.coordinates[1],
+                                        it.geometry.coordinates[0]
+                                    )
+                                )
+                            )
                         }
                         Log.d("markersMap", markersMap?.features?.size.toString())
                     }
