@@ -51,17 +51,20 @@ class MainActivity : AppCompatActivity(), PermissionsListener, OnMapReadyCallbac
         mapView.onCreate(savedInstanceState)
         mapView.getMapAsync(this)
         //getLocationDevice()
-        getLocationGPSTracker()
+
     }
 
-    private fun getLocationGPSTracker(){
-        val gpsTracker = GPSTracker(this)
-        val location = gpsTracker.getLocation()
-        if (location != null){
-            getMarkersMapAPI(location.longitude.toFloat(), location.latitude.toFloat())
-        } else{
-            Toast.makeText(this, "location is null", Toast.LENGTH_LONG).show()
+    private fun getLocationGPSTracker() {
+        if (PermissionsManager.areLocationPermissionsGranted(this)) {
+            val gpsTracker = GPSTracker(this)
+            val location = gpsTracker.getLocation()
+            if (location != null) {
+                getMarkersMapAPI(location.longitude.toFloat(), location.latitude.toFloat())
+            } else {
+                Toast.makeText(this, "location is null", Toast.LENGTH_LONG).show()
+            }
         }
+
     }
 
     @SuppressLint("MissingPermission")
@@ -78,6 +81,9 @@ class MainActivity : AppCompatActivity(), PermissionsListener, OnMapReadyCallbac
                 Toast.makeText(this, "Данные геопозиции не получены!", Toast.LENGTH_LONG).show()
             }
 
+        } else {
+            permissionsManager = PermissionsManager(this)
+            permissionsManager.requestLocationPermissions(this)
         }
     }
 
@@ -105,6 +111,7 @@ class MainActivity : AppCompatActivity(), PermissionsListener, OnMapReadyCallbac
 
                 override fun onFailure(call: Call<MarkersMap>, t: Throwable) {
                     Log.d("markersMap-Throwable", t.toString())
+                    Toast.makeText(this@MainActivity, "Retrofit onFailure", Toast.LENGTH_LONG).show()
                 }
             })
     }
@@ -142,15 +149,15 @@ class MainActivity : AppCompatActivity(), PermissionsListener, OnMapReadyCallbac
         Log.d("TAG", "onMapReady")
         this.mapboxMap = mapboxMap
         mapboxMap.setStyle(
-            Style.Builder().fromUri("mapbox://styles/mapbox/cjerxnqt3cgvp2rmyuxbeqme7")
+            Style.Builder().fromUri("mapbox://styles/mapbox/streets-v11")
         ) {
             // Map is set up and the style has loaded. Now you can add data or make other map adjustments
             enableLocationComponent(it)
         }
-        mapboxMap.addOnMapClickListener {
-            mapboxMap.addMarker(MarkerOptions().position(it))
-            true
-        }
+//        mapboxMap.addOnMapClickListener {
+//            mapboxMap.addMarker(MarkerOptions().position(it))
+//            true
+//        }
     }
 
     @SuppressLint("MissingPermission")
@@ -184,7 +191,7 @@ class MainActivity : AppCompatActivity(), PermissionsListener, OnMapReadyCallbac
                 // Set the LocationComponent's render mode
                 renderMode = RenderMode.COMPASS
             }
-
+            getLocationGPSTracker()
         } else {
             permissionsManager = PermissionsManager(this)
             permissionsManager.requestLocationPermissions(this)
