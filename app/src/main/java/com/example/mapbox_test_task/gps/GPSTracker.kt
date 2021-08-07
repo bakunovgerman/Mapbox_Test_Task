@@ -32,7 +32,7 @@ class GPSTracker(private val context: Context) : Service(), LocationListener {
 
     companion object {
         private const val MIN_DISTANCE: Float = 10f
-        private const val MIN_TIME: Long = 10
+        private const val MIN_TIME: Long = 1000 * 60 * 1
     }
 
     @SuppressLint("MissingPermission")
@@ -47,38 +47,40 @@ class GPSTracker(private val context: Context) : Service(), LocationListener {
                     Toast.makeText(context, "Ничего не включил!", Toast.LENGTH_LONG).show()
                 } else {
                     canGetLocation = true
-                    if (isNetworkEnable) {
-                        locationManager!!.requestLocationUpdates(
-                            LocationManager.NETWORK_PROVIDER,
-                            MIN_TIME,
-                            MIN_DISTANCE,
-                            this
-                        )
-                        Log.d("GPS", "Location from Network")
-                        location =
-                            locationManager!!.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
-                        if (location != null){
-                            latitude = location!!.latitude
-                            longitude = location!!.longitude
-                        } else{
-                            Log.d("GPS", "location is null from Network")
-                        }
-                    }
-                    else if (isGpsEnable){
+                    if (isGpsEnable){
                         locationManager!!.requestLocationUpdates(
                             LocationManager.GPS_PROVIDER,
                             MIN_TIME,
                             MIN_DISTANCE,
                             this
                         )
-                        Log.d("GPS", "Location from GPS")
+                        Log.d("LocGPS", "Location from GPS")
                         location =
                             locationManager!!.getLastKnownLocation(LocationManager.GPS_PROVIDER)
                         if (location != null){
                             latitude = location!!.latitude
                             longitude = location!!.longitude
                         } else{
-                            Log.d("GPS", "location is null from GPS")
+                            Log.d("LocGPS", "location is null from GPS")
+                        }
+                    }
+                    if (isNetworkEnable) {
+                        if (location == null){
+                            locationManager!!.requestLocationUpdates(
+                                LocationManager.NETWORK_PROVIDER,
+                                MIN_TIME,
+                                MIN_DISTANCE,
+                                this
+                            )
+                            Log.d("LocGPS", "Location from Network")
+                            location =
+                                locationManager!!.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+                            if (location != null){
+                                latitude = location!!.latitude
+                                longitude = location!!.longitude
+                            } else{
+                                Log.d("LocGPS", "location is null from Network")
+                            }
                         }
                     }
                 }
@@ -96,6 +98,6 @@ class GPSTracker(private val context: Context) : Service(), LocationListener {
     }
 
     override fun onLocationChanged(location: Location) {
-        TODO("Not yet implemented")
+        this.location = location
     }
 }

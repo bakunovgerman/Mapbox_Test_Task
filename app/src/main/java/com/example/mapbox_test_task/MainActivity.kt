@@ -21,6 +21,7 @@ import com.mapbox.mapboxsdk.maps.MapboxMap
 import com.mapbox.mapboxsdk.maps.OnMapReadyCallback
 import com.mapbox.mapboxsdk.maps.Style
 import android.location.LocationManager
+import com.example.mapbox_test_task.gps.GPSTracker
 import com.example.mapbox_test_task.model.MarkersMap
 import com.example.mapbox_test_task.retrofit.Common
 import com.mapbox.android.core.location.LocationEngine
@@ -49,7 +50,18 @@ class MainActivity : AppCompatActivity(), PermissionsListener, OnMapReadyCallbac
         mapView = findViewById(R.id.mapView)
         mapView.onCreate(savedInstanceState)
         mapView.getMapAsync(this)
-        getLocationDevice()
+        //getLocationDevice()
+        getLocationGPSTracker()
+    }
+
+    private fun getLocationGPSTracker(){
+        val gpsTracker = GPSTracker(this)
+        val location = gpsTracker.getLocation()
+        if (location != null){
+            getMarkersMapAPI(location.longitude.toFloat(), location.latitude.toFloat())
+        } else{
+            Toast.makeText(this, "location is null", Toast.LENGTH_LONG).show()
+        }
     }
 
     @SuppressLint("MissingPermission")
