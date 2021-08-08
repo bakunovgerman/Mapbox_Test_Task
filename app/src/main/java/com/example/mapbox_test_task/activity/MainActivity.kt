@@ -50,29 +50,28 @@ class MainActivity : AppCompatActivity(), PermissionsListener, OnMapReadyCallbac
         setContentView(R.layout.activity_main)
         locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
         mapView = findViewById(R.id.mapView)
-        mapView.onCreate(savedInstanceState)
-        mapView.getMapAsync(this)
-
         mainActivityViewModel = ViewModelProvider(this).get(MainActivityViewModel::class.java)
         mainActivityViewModel.markersMap.observe(this, Observer(::addMarkers))
+        mapView.onCreate(savedInstanceState)
+        mapView.getMapAsync(this)
     }
 
-    private fun addMarkers(markersMap: MarkersMap) {
+    private fun addMarkers(markersMap: MarkersMap?) {
         Toast.makeText(this, "addMarkers", Toast.LENGTH_LONG).show()
-//        if (markersMap != null){
-//            markersMap.features.forEach {
-//                mapboxMap.addMarker(
-//                    MarkerOptions().position(
-//                        LatLng(
-//                            it.geometry.coordinates[1],
-//                            it.geometry.coordinates[0]
-//                        )
-//                    )
-//                )
-//            }
-//        } else{
-//            Toast.makeText(this, "Маркеры не получены!", Toast.LENGTH_LONG).show()
-//        }
+        if (markersMap != null){
+            markersMap.features.forEach {
+                mapboxMap.addMarker(
+                    MarkerOptions().position(
+                        LatLng(
+                            it.geometry.coordinates[1],
+                            it.geometry.coordinates[0]
+                        )
+                    )
+                )
+            }
+        } else{
+            Toast.makeText(this, "Маркеры не получены!", Toast.LENGTH_LONG).show()
+        }
 
     }
 
@@ -134,10 +133,7 @@ class MainActivity : AppCompatActivity(), PermissionsListener, OnMapReadyCallbac
             // Map is set up and the style has loaded. Now you can add data or make other map adjustments
             enableLocationComponent(it)
         }
-//        mapboxMap.addOnMapClickListener {
-//            mapboxMap.addMarker(MarkerOptions().position(it))
-//            true
-//        }
+
     }
 
     @SuppressLint("MissingPermission")

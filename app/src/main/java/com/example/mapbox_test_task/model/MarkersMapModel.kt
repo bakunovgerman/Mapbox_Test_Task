@@ -1,26 +1,31 @@
 package com.example.mapbox_test_task.model
 
+import android.content.Context
 import android.location.Location
 import android.util.Log
-import android.widget.Toast
-import com.example.mapbox_test_task.App
 import com.example.mapbox_test_task.R
 import com.example.mapbox_test_task.gps.GPSTracker
 import com.example.mapbox_test_task.retrofit.Common
-import retrofit2.Call
 import retrofit2.Response
 
-class MarkersMapModel {
+class MarkersMapModel(private val context: Context?) {
 
     fun getLocationGPSTracker(): Location? {
-        val gpsTracker = GPSTracker(App.applicationContext)
-        return gpsTracker.getLocation()
+        if (context != null){
+            val gpsTracker = GPSTracker(context)
+            return gpsTracker.getLocation()
+        } else{
+            Log.d("APPContext", "context is null")
+            return null
+        }
+
+
     }
 
     suspend fun getMarkersMapAPI(lon: Float, lat: Float): Response<MarkersMap> {
         val mService = Common.retrofitService
         //Log.d("markersMap", mService.getMarkersMap(lon, lat, 1000, 50, getString(R.string.mapbox_access_token)).request().toString())
-        return mService.getMarkersMap(lon, lat, 1000, 50, App.applicationContext.getString(R.string.mapbox_access_token))
+        return mService.getMarkersMap(lon, lat, 1000, 50, context!!.getString(R.string.mapbox_access_token))
 //            .enqueue(object : retrofit2.Callback<MarkersMap> {
 //                override fun onResponse(call: Call<MarkersMap>, response: Response<MarkersMap>) {
 //                    if (response.isSuccessful) {
