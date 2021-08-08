@@ -1,7 +1,10 @@
 package com.example.mapbox_test_task.activity
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.Context
+import android.content.Intent
+import android.content.IntentSender
 import android.location.Location
 import android.location.LocationListener
 import android.os.Bundle
@@ -21,6 +24,7 @@ import com.mapbox.mapboxsdk.maps.MapboxMap
 import com.mapbox.mapboxsdk.maps.OnMapReadyCallback
 import com.mapbox.mapboxsdk.maps.Style
 import android.location.LocationManager
+import android.service.voice.VoiceInteractionSession
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import com.example.mapbox_test_task.R
@@ -28,6 +32,12 @@ import com.example.mapbox_test_task.gps.GPSTracker
 import com.example.mapbox_test_task.model.MarkersMap
 import com.example.mapbox_test_task.retrofit.Common
 import com.example.mapbox_test_task.viewModel.MainActivityViewModel
+import com.google.android.gms.common.api.ApiException
+import com.google.android.gms.common.api.ResolvableApiException
+import com.google.android.gms.location.*
+import com.google.android.gms.tasks.OnCompleteListener
+import com.google.android.gms.tasks.OnSuccessListener
+import com.google.android.gms.tasks.Task
 import com.mapbox.mapboxsdk.annotations.MarkerOptions
 import com.mapbox.mapboxsdk.geometry.LatLng
 import retrofit2.Call
@@ -36,19 +46,23 @@ import retrofit2.Response
 class MainActivity : AppCompatActivity(), PermissionsListener, OnMapReadyCallback,
     LocationListener {
 
+    companion object{
+        const val REQUEST_CHECK_SETTINGS = 1001
+    }
+
     private lateinit var mapView: MapView
     private lateinit var mapboxMap: MapboxMap
     private var permissionsManager: PermissionsManager = PermissionsManager(this)
     private lateinit var locationManager: LocationManager
-    private var longitude: Float? = null
-    private var latitude: Float? = null
     private lateinit var mainActivityViewModel: MainActivityViewModel
+    private lateinit var locationRequest: LocationRequest
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Mapbox.getInstance(this, getString(R.string.mapbox_access_token))
         setContentView(R.layout.activity_main)
         locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        locationRequest = LocationRequest.create()
         mapView = findViewById(R.id.mapView)
         mainActivityViewModel = ViewModelProvider(this).get(MainActivityViewModel::class.java)
         mainActivityViewModel.markersMap.observe(this, Observer(::addMarkers))
@@ -58,7 +72,7 @@ class MainActivity : AppCompatActivity(), PermissionsListener, OnMapReadyCallbac
 
     private fun addMarkers(markersMap: MarkersMap?) {
         Toast.makeText(this, "addMarkers", Toast.LENGTH_LONG).show()
-        if (markersMap != null){
+        if (markersMap != null) {
             markersMap.features.forEach {
                 mapboxMap.addMarker(
                     MarkerOptions().position(
@@ -69,7 +83,7 @@ class MainActivity : AppCompatActivity(), PermissionsListener, OnMapReadyCallbac
                     )
                 )
             }
-        } else{
+        } else {
             Toast.makeText(this, "Маркеры не получены!", Toast.LENGTH_LONG).show()
         }
 
@@ -167,10 +181,47 @@ class MainActivity : AppCompatActivity(), PermissionsListener, OnMapReadyCallbac
                 // Set the LocationComponent's render mode
                 renderMode = RenderMode.COMPASS
             }
-            mainActivityViewModel.loadMarkersMap()
+            // запрос на включение gps
+            onGps()
         } else {
             permissionsManager = PermissionsManager(this)
             permissionsManager.requestLocationPermissions(this)
+        }
+    }
+
+    private fun onGps(){
+        locationRequest.priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+        locationRequest.interval = 5000
+        locationRequest.fastestInterval = 2000
+        val builder = LocationSettingsRequest.Builder().addLocationRequest(locationRequest)
+        builder.setAlwaysShow(true)
+        val result: Task<LocationSettingsResponse> =
+            LocationServices.getSettingsClient(applicationContext).checkLocationSettings(builder.build())
+        result.addOnCompleteListener(OnCompleteListener {
+            try {
+                val response = it.getResult(ApiException::class.java)
+            } catch (e: ApiException){
+                if (e.statusCode == LocationSettingsStatusCodes.RESOLUTION_REQUIRED) {
+                    try {
+                        val resolvableApiException = e as ResolvableApiException
+                        resolvableApiException.startResolutionForResult(this@MainActivity, REQUEST_CHECK_SETTINGS)
+                    } catch (e: IntentSender.SendIntentException){
+
+                    }
+                }
+            }
+        })
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        if (requestCode == REQUEST_CHECK_SETTINGS){
+            when(resultCode){
+                Activity.RESULT_OK ->{
+                    mainActivityViewModel.loadMarkersMap()
+                }
+            }
         }
     }
 
