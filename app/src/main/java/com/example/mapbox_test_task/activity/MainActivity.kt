@@ -42,6 +42,7 @@ class MainActivity : AppCompatActivity(), PermissionsListener, OnMapReadyCallbac
     private lateinit var mainActivityViewModel: MainActivityViewModel
     private lateinit var locationManager: LocationManager
     private var markersList: MutableList<Marker> = ArrayList()
+    private var addMarkerCount: Int = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -50,6 +51,7 @@ class MainActivity : AppCompatActivity(), PermissionsListener, OnMapReadyCallbac
         setContentView(R.layout.activity_main)
 
         mapView = findViewById(R.id.mapView)
+
         locationManager = getSystemService(LOCATION_SERVICE) as LocationManager
         mainActivityViewModel = ViewModelProvider(this).get(MainActivityViewModel::class.java)
         mainActivityViewModel.markersMap.observe(this, Observer(::addMarkers))
@@ -60,15 +62,6 @@ class MainActivity : AppCompatActivity(), PermissionsListener, OnMapReadyCallbac
     private fun addMarkers(markersMap: MarkersMap?) {
         Toast.makeText(this, "addMarkers", Toast.LENGTH_LONG).show()
         if (markersMap != null) {
-            Toast.makeText(this, markersList.size.toString(), Toast.LENGTH_LONG).show()
-            if (markersList.size != 0) {
-                Log.d("markersList", "markersList is not null = ${markersList.size}")
-                repeat(markersList.size) {
-                    Log.d("markersList", "delete $it")
-                    mapboxMap.removeMarker(markersList[it])
-                }
-            }
-            markersList.clear()
             markersMap.features.forEach {
                 // добавляем маркер в список
                 val markerOptions = MarkerOptions().position(
@@ -85,6 +78,7 @@ class MainActivity : AppCompatActivity(), PermissionsListener, OnMapReadyCallbac
                     markerOptions
                 )
             }
+
         } else {
             Toast.makeText(this, "Маркеры не получены!", Toast.LENGTH_LONG).show()
         }
@@ -188,11 +182,14 @@ class MainActivity : AppCompatActivity(), PermissionsListener, OnMapReadyCallbac
 
     private val locationListener = object : LocationListener {
 
-
         override fun onLocationChanged(location: Location) {
-            Toast.makeText(this@MainActivity, location.longitude.toString(), Toast.LENGTH_SHORT)
-                .show()
-            mainActivityViewModel.loadMarkersMap(location)
+//            Toast.makeText(this@MainActivity, location.longitude.toString(), Toast.LENGTH_SHORT)
+//                .show()
+            if (addMarkerCount == 0){
+                addMarkerCount++
+                mainActivityViewModel.loadMarkersMap(location)
+            }
+
         }
 
         override fun onProviderDisabled(provider: String) {
