@@ -1,4 +1,4 @@
-package com.example.mapbox_test_task.model
+package com.example.mapbox_test_task.model.data
 
 data class MarkersMap (
     val type : String,

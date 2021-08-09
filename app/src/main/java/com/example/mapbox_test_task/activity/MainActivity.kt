@@ -1,7 +1,6 @@
 package com.example.mapbox_test_task.activity
 
 import android.annotation.SuppressLint
-import android.content.Context
 import android.location.Location
 import android.location.LocationListener
 import android.os.Bundle
@@ -24,9 +23,10 @@ import android.location.LocationManager
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import com.example.mapbox_test_task.R
-import com.example.mapbox_test_task.model.MarkersMap
+import com.example.mapbox_test_task.model.data.MarkersMap
 import com.example.mapbox_test_task.viewModel.MainActivityViewModel
 import com.google.android.gms.location.*
+import com.mapbox.mapboxsdk.annotations.Marker
 import com.mapbox.mapboxsdk.annotations.MarkerOptions
 import com.mapbox.mapboxsdk.geometry.LatLng
 
@@ -41,6 +41,7 @@ class MainActivity : AppCompatActivity(), PermissionsListener, OnMapReadyCallbac
     private var permissionsManager: PermissionsManager = PermissionsManager(this)
     private lateinit var mainActivityViewModel: MainActivityViewModel
     private lateinit var locationManager: LocationManager
+    private var markersList: MutableList<Marker> = ArrayList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -59,14 +60,29 @@ class MainActivity : AppCompatActivity(), PermissionsListener, OnMapReadyCallbac
     private fun addMarkers(markersMap: MarkersMap?) {
         Toast.makeText(this, "addMarkers", Toast.LENGTH_LONG).show()
         if (markersMap != null) {
+            Toast.makeText(this, markersList.size.toString(), Toast.LENGTH_LONG).show()
+            if (markersList.size != 0) {
+                Log.d("markersList", "markersList is not null = ${markersList.size}")
+                repeat(markersList.size) {
+                    Log.d("markersList", "delete $it")
+                    mapboxMap.removeMarker(markersList[it])
+                }
+            }
+            markersList.clear()
             markersMap.features.forEach {
-                mapboxMap.addMarker(
-                    MarkerOptions().position(
-                        LatLng(
-                            it.geometry.coordinates[1],
-                            it.geometry.coordinates[0]
-                        )
+                // добавляем маркер в список
+                val markerOptions = MarkerOptions().position(
+                    LatLng(
+                        it.geometry.coordinates[1],
+                        it.geometry.coordinates[0]
                     )
+                )
+                markersList.add(
+                    Marker(markerOptions)
+                )
+                // добавляем маркер на карту
+                mapboxMap.addMarker(
+                    markerOptions
                 )
             }
         } else {
@@ -170,9 +186,31 @@ class MainActivity : AppCompatActivity(), PermissionsListener, OnMapReadyCallbac
         )
     }
 
-    private val locationListener = LocationListener {
-        Toast.makeText(this, it.longitude.toString(), Toast.LENGTH_SHORT).show()
+    private val locationListener = object : LocationListener {
+
+
+        override fun onLocationChanged(location: Location) {
+            Toast.makeText(this@MainActivity, location.longitude.toString(), Toast.LENGTH_SHORT)
+                .show()
+            mainActivityViewModel.loadMarkersMap(location)
+        }
+
+        override fun onProviderDisabled(provider: String) {
+            if (provider == LocationManager.GPS_PROVIDER) {
+                Toast.makeText(this@MainActivity, "Упс...GPS выключен!", Toast.LENGTH_SHORT)
+                    .show()
+            }
+        }
+
+        override fun onProviderEnabled(provider: String) {
+
+        }
+
+        override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {
+
+        }
     }
+
 
     override fun onPause() {
         super.onPause()
@@ -199,5 +237,4 @@ class MainActivity : AppCompatActivity(), PermissionsListener, OnMapReadyCallbac
         super.onDestroy()
         mapView.onDestroy()
     }
-
 }

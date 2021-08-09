@@ -1,6 +1,6 @@
 package com.example.mapbox_test_task.retrofit
 
-import com.example.mapbox_test_task.model.MarkersMap
+import com.example.mapbox_test_task.model.data.MarkersMap
 import retrofit2.Call
 import retrofit2.Response
 import retrofit2.http.GET

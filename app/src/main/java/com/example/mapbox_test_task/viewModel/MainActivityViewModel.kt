@@ -2,13 +2,12 @@ package com.example.mapbox_test_task.viewModel
 
 import android.location.Location
 import android.util.Log
-import android.widget.Toast
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mapbox_test_task.App
-import com.example.mapbox_test_task.model.MarkersMap
+import com.example.mapbox_test_task.model.data.MarkersMap
 import com.example.mapbox_test_task.model.MarkersMapModel
 import kotlinx.coroutines.*
 import retrofit2.HttpException
@@ -20,6 +19,10 @@ class MainActivityViewModel : ViewModel() {
         private const val TAG = "viewModelLog"
     }
 
+    private val errorHandler = CoroutineExceptionHandler { _, error ->
+        Log.d("errorHandler", error.toString())
+    }
+
     // init LiveData
     val markersMap: LiveData<MarkersMap?> get() = _markersMap
     private val _markersMap = MutableLiveData<MarkersMap?>()
@@ -29,7 +32,7 @@ class MainActivityViewModel : ViewModel() {
 
     fun loadMarkersMap(location: Location) {
         val viewModelScopeCustom = viewModelScope + Dispatchers.Main
-        viewModelScopeCustom.launch {
+        viewModelScopeCustom.launch(errorHandler) {
             var response: Response<MarkersMap>
             withContext(Dispatchers.IO) {
                 response = markersMapModel.getMarkersMapAPI(
