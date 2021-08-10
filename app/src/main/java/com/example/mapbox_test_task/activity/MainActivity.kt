@@ -46,7 +46,7 @@ class MainActivity : AppCompatActivity(), PermissionsListener, OnMapReadyCallbac
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Log.d("CheckLifeCycle", "onCreate")
+        //Log.d("CheckLifeCycle", "onCreate")
         Mapbox.getInstance(this, getString(R.string.mapbox_access_token))
         setContentView(R.layout.activity_main)
 
@@ -60,7 +60,7 @@ class MainActivity : AppCompatActivity(), PermissionsListener, OnMapReadyCallbac
     }
 
     private fun addMarkers(markersMap: MarkersMap?) {
-        Toast.makeText(this, "addMarkers", Toast.LENGTH_LONG).show()
+        //Toast.makeText(this, "addMarkers", Toast.LENGTH_LONG).show()
         if (markersMap != null) {
             markersMap.features.forEach {
                 // добавляем маркер в список
